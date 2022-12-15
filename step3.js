@@ -5,61 +5,57 @@ const axios = require('axios');
 const argv = process.argv;
 let fileName = argv[argv.length - 1];
 let url = argv[argv.length - 1];
-let goOut = argv[2];
-if (goOut === '--out') {
-  if (url.startsWith('http')) {
-    contents = getWebsite(url);
-  } else {
-    contents = cat(fileName);
-  }
-  writeToFile(argv[3], contents);
-  //   console.log('This is what we have!');
-} else {
-  if (url.startsWith('http')) {
-    getWebsite(url);
-  } else {
-    cat(fileName);
-  }
-}
-// getWebsite(url);
+let namedFile = argv[argv.length - 2];
+let letMeOut = argv[2];
 
-function getWebsite(url) {
-  let website = axios
+if (url.startsWith('http')) {
+  getWebsite(url, letMeOut);
+} else {
+  cat(fileName, letMeOut);
+}
+
+async function getWebsite(url, out) {
+  let website = await axios
     .get(url)
     .then((resp) => {
       console.log(resp.data);
+      if (out === '--out') {
+        writToFile(namedFile, resp.data);
+      }
+      return resp.data;
     })
     .catch((err) => {
       console.log('This is your error: ' + err);
     });
-  return website;
+  // return website;
 }
 
-function cat(path) {
-  fs.readFile(`./${path}`, 'utf-8', (err, data) => {
-    if (err) {
-      console.log('ERROR: ', err);
-      process.exit(1);
-    } else {
-      return data;
-    }
-  });
-}
-function writeToFile(fileToBeWritten, contents) {
-  //   console.log(fileToBeWritten, contents);
-  fs.writeFile(
-    `./${fileToBeWritten}`,
-    contents,
-    { encoding: 'utf-8' },
+function writToFile(nameOfFile, content) {
+  fs.appendFile(
+    `./${nameOfFile}`,
+    content,
+    { encoding: 'utf-8', flag: 'a' },
     (err) => {
       if (err) {
         console.log('ERROR : ', err);
         process.exit(1);
       }
-      console.log(`# no output, but ${fileToBeWritten} was created.`);
+      console.log('IT WORKED');
     }
   );
 }
-module.exports = {
-  cat: cat,
-};
+
+function cat(path, out) {
+  fs.readFile(`./${path}`, 'utf-8', (err, data) => {
+    if (err) {
+      console.log('ERROR: ', err);
+      process.exit(1);
+    } else {
+      console.log(data);
+      if (out === '--out') {
+        writToFile(namedFile, data);
+      }
+      return data;
+    }
+  });
+}
